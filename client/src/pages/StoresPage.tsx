@@ -32,7 +32,7 @@ export default function StoresPage() {
       setDialogOpen(false);
       toast({ title: "Tạo cửa hàng thành công" });
     },
-    onError: () => toast({ title: "Lỗi khi tạo cửa hàng", variant: "destructive" }),
+    onError: (error: Error) => toast({ title: error.message || "Lỗi khi tạo cửa hàng", variant: "destructive" }),
   });
 
   const updateMutation = useMutation({

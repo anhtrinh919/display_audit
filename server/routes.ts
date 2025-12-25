@@ -66,9 +66,12 @@ export async function registerRoutes(
       const validated = insertStoreSchema.parse(req.body);
       const store = await storage.createStore(validated);
       res.status(201).json(store);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating store:", error);
-      res.status(400).json({ error: "Invalid store data" });
+      if (error?.code === "23505") {
+        return res.status(400).json({ error: "Mã cửa hàng đã tồn tại" });
+      }
+      res.status(400).json({ error: "Dữ liệu cửa hàng không hợp lệ" });
     }
   });
 
