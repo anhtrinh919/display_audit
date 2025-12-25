@@ -174,41 +174,51 @@ export async function registerRoutes(
 
   app.post("/api/tasks", upload.single("standardImage"), async (req, res) => {
     try {
-      const taskData = {
-        ...req.body,
+      const taskData: Record<string, any> = {
+        taskId: req.body.taskId,
+        title: req.body.title,
+        description: req.body.description || undefined,
         totalStores: parseInt(req.body.totalStores || "0"),
-        categoryId: req.body.categoryId ? parseInt(req.body.categoryId) : null,
-        standardImageUrl: req.file ? `/uploads/${req.file.filename}` : null,
-        dueDate: req.body.dueDate ? new Date(req.body.dueDate) : null,
+        standardImageUrl: req.file ? `/uploads/${req.file.filename}` : undefined,
       };
+      
+      if (req.body.categoryId) {
+        taskData.categoryId = parseInt(req.body.categoryId);
+      }
+      if (req.body.dueDate) {
+        taskData.dueDate = new Date(req.body.dueDate);
+      }
       
       const validated = insertTaskSchema.parse(taskData);
       const task = await storage.createTask(validated);
       res.status(201).json(task);
     } catch (error) {
       console.error("Error creating task:", error);
-      res.status(400).json({ error: "Invalid task data" });
+      res.status(400).json({ error: "Dữ liệu hạng mục không hợp lệ" });
     }
   });
 
   app.patch("/api/tasks/:id", upload.single("standardImage"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const updateData = {
-        ...req.body,
-        ...(req.file && { standardImageUrl: `/uploads/${req.file.filename}` }),
-        ...(req.body.dueDate && { dueDate: new Date(req.body.dueDate) }),
-        ...(req.body.categoryId && { categoryId: parseInt(req.body.categoryId) }),
-        ...(req.body.totalStores && { totalStores: parseInt(req.body.totalStores) }),
-      };
+      const updateData: Record<string, any> = {};
+      
+      if (req.body.taskId) updateData.taskId = req.body.taskId;
+      if (req.body.title) updateData.title = req.body.title;
+      if (req.body.description !== undefined) updateData.description = req.body.description || undefined;
+      if (req.body.totalStores) updateData.totalStores = parseInt(req.body.totalStores);
+      if (req.body.categoryId) updateData.categoryId = parseInt(req.body.categoryId);
+      if (req.body.dueDate) updateData.dueDate = new Date(req.body.dueDate);
+      if (req.file) updateData.standardImageUrl = `/uploads/${req.file.filename}`;
+      
       const task = await storage.updateTask(id, updateData);
       if (!task) {
-        return res.status(404).json({ error: "Task not found" });
+        return res.status(404).json({ error: "Không tìm thấy hạng mục" });
       }
       res.json(task);
     } catch (error) {
       console.error("Error updating task:", error);
-      res.status(500).json({ error: "Failed to update task" });
+      res.status(500).json({ error: "Lỗi khi cập nhật hạng mục" });
     }
   });
 
