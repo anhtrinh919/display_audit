@@ -31,7 +31,7 @@ export function AuditComparison({ task, result }: AuditComparisonProps) {
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold flex items-center gap-2">
             <ScanEye className="w-5 h-5 text-primary" />
-            Visual Analysis
+            Phân tích Hình ảnh
           </h2>
           <div className="flex items-center gap-2">
             <Button 
@@ -41,11 +41,11 @@ export function AuditComparison({ task, result }: AuditComparisonProps) {
               className="gap-2"
             >
               <Grid3X3 className="w-4 h-4" />
-              {showGrid ? "Hide Grid" : "Show Grid"}
+              {showGrid ? "Ẩn Lưới" : "Hiện Lưới"}
             </Button>
             <Button variant="outline" size="sm" className="gap-2">
               <Maximize2 className="w-4 h-4" />
-              Expand
+              Mở rộng
             </Button>
           </div>
         </div>
@@ -55,7 +55,7 @@ export function AuditComparison({ task, result }: AuditComparisonProps) {
           <div className="relative rounded-xl overflow-hidden border-2 border-primary/20 shadow-sm bg-muted/30 group">
             <div className="absolute top-3 left-3 z-10">
               <Badge className="bg-primary/90 hover:bg-primary text-white backdrop-blur-sm shadow-sm">
-                Standard / Best Practice
+                Tiêu chuẩn (Best Practice)
               </Badge>
             </div>
             <img 
@@ -69,7 +69,7 @@ export function AuditComparison({ task, result }: AuditComparisonProps) {
           <div className="relative rounded-xl overflow-hidden border-2 border-muted shadow-sm bg-muted/30 group">
             <div className="absolute top-3 left-3 z-10">
               <Badge variant="secondary" className="bg-black/70 hover:bg-black/80 text-white backdrop-blur-sm shadow-sm">
-                Actual: {result.storeName}
+                Thực tế: {result.storeName}
               </Badge>
             </div>
             
@@ -114,7 +114,7 @@ export function AuditComparison({ task, result }: AuditComparisonProps) {
       {/* Analysis Results Sidebar */}
       <div className="lg:col-span-4 flex flex-col gap-4 h-full overflow-hidden">
          <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold">Audit Results</h2>
+          <h2 className="text-xl font-bold">Kết quả Kiểm tra</h2>
           <div className="flex gap-1">
             <Button variant="ghost" size="icon" className="h-8 w-8">
               <Download className="w-4 h-4" />
@@ -130,7 +130,7 @@ export function AuditComparison({ task, result }: AuditComparisonProps) {
             {/* Score Card */}
             <div className="bg-card rounded-xl p-5 border shadow-sm">
               <div className="flex justify-between items-center mb-4">
-                <span className="text-sm font-medium text-muted-foreground">Compliance Score</span>
+                <span className="text-sm font-medium text-muted-foreground">Điểm Tuân thủ</span>
                 <span className={`text-2xl font-bold ${
                   result.score >= 90 ? "text-secondary" : result.score >= 70 ? "text-accent" : "text-destructive"
                 }`}>
@@ -154,14 +154,14 @@ export function AuditComparison({ task, result }: AuditComparisonProps) {
                    <XCircle className="w-5 h-5 text-destructive" />
                 )}
                 <span className="font-medium">
-                  {result.score >= 90 ? "Fully Compliant" : result.score >= 70 ? "Minor Issues Found" : "Non-Compliant"}
+                  {result.score >= 90 ? "Đạt (Tuyệt đối)" : result.score >= 70 ? "Đạt (Cần cải thiện)" : "Không Đạt"}
                 </span>
               </div>
             </div>
 
             {/* AI Findings List */}
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">AI Detected Issues</h3>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Lỗi phát hiện bởi AI</h3>
               {result.issues.map((issue, idx) => (
                 <div 
                   key={idx}
@@ -187,12 +187,12 @@ export function AuditComparison({ task, result }: AuditComparisonProps) {
              <div className="bg-primary/5 rounded-xl p-5 border border-primary/10">
               <h3 className="font-semibold text-primary mb-2 flex items-center gap-2">
                 <ClipboardList className="w-4 h-4" />
-                Recommended Actions
+                Hành động Đề xuất
               </h3>
               <ul className="text-sm space-y-2 text-foreground/80 list-disc list-inside">
-                <li>Restock eye-level shelves immediately</li>
-                <li>Re-align header signage to center</li>
-                <li>Remove unauthorized price tags</li>
+                <li>Bổ sung hàng hóa kệ ngang tầm mắt</li>
+                <li>Điều chỉnh lại biển hiệu trung tâm</li>
+                <li>Loại bỏ nhãn giá không đúng quy định</li>
               </ul>
             </div>
           </CardContent>

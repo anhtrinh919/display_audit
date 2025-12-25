@@ -7,6 +7,10 @@ import NotFound from "@/pages/not-found";
 import TasksPage from "@/pages/TasksPage";
 import AuditPage from "@/pages/AuditPage";
 import ReportsPage from "@/pages/ReportsPage";
+import AnalyticsPage from "@/pages/AnalyticsPage";
+import SettingsPage from "@/pages/SettingsPage";
+import StoresPage from "@/pages/StoresPage";
+import CategoriesPage from "@/pages/CategoriesPage";
 
 function Router() {
   return (
@@ -14,6 +18,10 @@ function Router() {
       <Route path="/" component={TasksPage} />
       <Route path="/audit/:id" component={AuditPage} />
       <Route path="/reports" component={ReportsPage} />
+      <Route path="/analytics" component={AnalyticsPage} />
+      <Route path="/settings" component={SettingsPage} />
+      <Route path="/stores" component={StoresPage} />
+      <Route path="/categories" component={CategoriesPage} />
       <Route component={NotFound} />
     </Switch>
   );

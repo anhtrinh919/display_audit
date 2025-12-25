@@ -14,7 +14,7 @@ export default function AuditPage() {
   // Simulating a specific result for demo - normally would select from a list
   const result = mockResults.find(r => r.taskId === taskId) || mockResults[1]; 
 
-  if (!task) return <div>Task not found</div>;
+  if (!task) return <div>Không tìm thấy nhiệm vụ</div>;
 
   return (
     <AppLayout>
@@ -33,22 +33,22 @@ export default function AuditPage() {
                 <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-xs font-mono">{task.id}</span>
               </div>
               <p className="text-xs text-muted-foreground">
-                Auditing: <span className="font-medium text-foreground">{result.storeName}</span> • {result.date}
+                Đang kiểm tra: <span className="font-medium text-foreground">{result.storeName}</span> • {result.date}
               </p>
             </div>
           </div>
           
           <div className="flex items-center gap-3">
              <Button variant="outline">
-                Previous Store
+                Cửa hàng Trước
              </Button>
              <Button variant="outline">
-                Next Store
+                Cửa hàng Sau
              </Button>
              <div className="w-px h-6 bg-border mx-1" />
              <Button className="gap-2 bg-primary hover:bg-primary/90">
                 <Save className="w-4 h-4" />
-                Complete Audit
+                Hoàn thành Kiểm tra
              </Button>
           </div>
         </div>

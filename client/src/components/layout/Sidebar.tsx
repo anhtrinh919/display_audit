@@ -1,4 +1,4 @@
-import { LayoutDashboard, ClipboardList, BarChart3, Settings, LogOut, Search, Plus } from "lucide-react";
+import { LayoutDashboard, ClipboardList, BarChart3, Settings, LogOut, Search, Store, Tags } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -8,10 +8,12 @@ export function Sidebar() {
   const [location] = useLocation();
 
   const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/reports" },
-    { icon: ClipboardList, label: "Audit Tasks", href: "/" },
-    { icon: BarChart3, label: "Analytics", href: "/analytics" },
-    { icon: Settings, label: "Settings", href: "/settings" },
+    { icon: LayoutDashboard, label: "Tổng quan", href: "/reports" },
+    { icon: ClipboardList, label: "Nhiệm vụ Trưng bày", href: "/" },
+    { icon: Store, label: "Cửa hàng", href: "/stores" },
+    { icon: Tags, label: "Danh mục", href: "/categories" },
+    { icon: BarChart3, label: "Phân tích", href: "/analytics" },
+    { icon: Settings, label: "Cài đặt", href: "/settings" },
   ];
 
   return (
@@ -28,7 +30,7 @@ export function Sidebar() {
       <div className="p-4">
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search tasks..." className="pl-9 bg-background/50" />
+          <Input placeholder="Tìm kiếm..." className="pl-9 bg-background/50" />
         </div>
       </div>
 
@@ -61,12 +63,12 @@ export function Sidebar() {
           </div>
           <div className="flex-1 overflow-hidden">
             <div className="text-sm font-medium truncate">Jane Doe</div>
-            <div className="text-xs text-muted-foreground truncate">Trade Marketing Mgr</div>
+            <div className="text-xs text-muted-foreground truncate">Quản lý Trade Marketing</div>
           </div>
         </div>
         <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-destructive" size="sm">
           <LogOut className="w-4 h-4 mr-2" />
-          Sign Out
+          Đăng xuất
         </Button>
       </div>
     </div>

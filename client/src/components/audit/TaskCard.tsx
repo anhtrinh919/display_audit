@@ -16,12 +16,18 @@ export function TaskCard({ task }: TaskCardProps) {
     draft: "bg-muted text-muted-foreground border-border",
   };
 
+  const statusLabels = {
+    active: "Đang diễn ra",
+    completed: "Hoàn thành",
+    draft: "Nháp"
+  };
+
   return (
     <Card className="overflow-hidden hover:shadow-md transition-all duration-300 border-l-4 border-l-primary group">
       <CardHeader className="p-4 pb-2">
         <div className="flex justify-between items-start mb-2">
           <Badge variant="outline" className={statusColors[task.status]}>
-            {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
+            {statusLabels[task.status]}
           </Badge>
           <span className="text-xs text-muted-foreground font-mono">{task.id}</span>
         </div>
@@ -47,12 +53,12 @@ export function TaskCard({ task }: TaskCardProps) {
           
           <div className="flex-1 space-y-1">
             <div className="flex justify-between text-xs font-medium">
-              <span>Progress</span>
+              <span>Tiến độ</span>
               <span>{Math.round((task.completedStores / task.totalStores) * 100)}%</span>
             </div>
             <Progress value={(task.completedStores / task.totalStores) * 100} className="h-2" />
             <div className="text-xs text-muted-foreground">
-              {task.completedStores} of {task.totalStores} stores audited
+              {task.completedStores} / {task.totalStores} cửa hàng đã kiểm tra
             </div>
           </div>
         </div>
@@ -61,11 +67,11 @@ export function TaskCard({ task }: TaskCardProps) {
       <CardFooter className="p-3 bg-muted/20 flex justify-between items-center text-xs text-muted-foreground">
         <div className="flex items-center gap-1.5">
           <Calendar className="w-3.5 h-3.5" />
-          <span>Due {task.dueDate}</span>
+          <span>Hạn: {task.dueDate}</span>
         </div>
         <Link href={`/audit/${task.id}`}>
           <div className="flex items-center gap-1 font-medium text-primary hover:underline cursor-pointer">
-            View Audit <ChevronRight className="w-3 h-3" />
+            Xem Chi tiết <ChevronRight className="w-3 h-3" />
           </div>
         </Link>
       </CardFooter>

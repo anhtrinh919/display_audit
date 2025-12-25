@@ -7,17 +7,17 @@ import { ArrowUpRight, ArrowDownRight, TrendingUp, AlertCircle, CheckCircle } fr
 export default function ReportsPage() {
   // Mock aggregation data
   const complianceData = [
-    { name: 'Compliant', value: 65, color: 'var(--color-secondary)' },
-    { name: 'Minor Issues', value: 25, color: 'var(--color-accent)' },
-    { name: 'Non-Compliant', value: 10, color: 'var(--color-destructive)' },
+    { name: 'Đạt', value: 65, color: 'var(--color-secondary)' },
+    { name: 'Cần cải thiện', value: 25, color: 'var(--color-accent)' },
+    { name: 'Không Đạt', value: 10, color: 'var(--color-destructive)' },
   ];
 
   const regionPerformance = [
-    { name: 'North', score: 88 },
-    { name: 'South', score: 72 },
-    { name: 'East', score: 94 },
-    { name: 'West', score: 65 },
-    { name: 'Metro', score: 81 },
+    { name: 'Miền Bắc', score: 88 },
+    { name: 'Miền Nam', score: 72 },
+    { name: 'Miền Trung', score: 94 },
+    { name: 'Miền Tây', score: 65 },
+    { name: 'TP.HCM', score: 81 },
   ];
 
   return (
@@ -25,48 +25,48 @@ export default function ReportsPage() {
       <div className="p-8 max-w-7xl mx-auto space-y-8">
         <div className="flex justify-between items-end">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">Dashboard</h1>
-            <p className="text-muted-foreground">Overview of campaign performance and compliance metrics.</p>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">Tổng quan</h1>
+            <p className="text-muted-foreground">Báo cáo hiệu suất chiến dịch và chỉ số tuân thủ.</p>
           </div>
           <div className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full border">
-            Last updated: Today, 09:41 AM
+            Cập nhật lần cuối: Hôm nay, 09:41 AM
           </div>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard 
-            title="Total Audits" 
+            title="Tổng số lượt kiểm tra" 
             value="1,248" 
             trend="+12%" 
             trendUp={true} 
             icon={TrendingUp}
-            desc="vs. last month"
+            desc="so với tháng trước"
           />
           <StatsCard 
-            title="Avg. Compliance" 
+            title="Tỷ lệ Tuân thủ TB" 
             value="78%" 
             trend="+2.4%" 
             trendUp={true} 
             icon={CheckCircle}
-            desc="vs. last month"
+            desc="so với tháng trước"
           />
           <StatsCard 
-            title="Critical Issues" 
+            title="Lỗi Nghiêm trọng" 
             value="24" 
             trend="-5%" 
             trendUp={true} // Good that issues are down
             icon={AlertCircle}
-            desc="Requires attention"
+            desc="Cần xử lý ngay"
             alert
           />
           <StatsCard 
-            title="Active Campaigns" 
+            title="Chiến dịch Hoạt động" 
             value="8" 
             trend="0" 
             trendUp={true} 
             icon={BarChart}
-            desc="2 ending soon"
+            desc="2 sắp kết thúc"
           />
         </div>
 
@@ -74,7 +74,7 @@ export default function ReportsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle>Regional Compliance Performance</CardTitle>
+              <CardTitle>Hiệu suất theo Khu vực</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-[300px] w-full">
@@ -96,7 +96,7 @@ export default function ReportsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Issue Distribution</CardTitle>
+              <CardTitle>Phân bổ Vấn đề</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-[300px] w-full flex flex-col items-center justify-center">
