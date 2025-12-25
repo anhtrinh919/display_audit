@@ -179,6 +179,7 @@ export async function registerRoutes(
         totalStores: parseInt(req.body.totalStores || "0"),
         categoryId: req.body.categoryId ? parseInt(req.body.categoryId) : null,
         standardImageUrl: req.file ? `/uploads/${req.file.filename}` : null,
+        dueDate: req.body.dueDate ? new Date(req.body.dueDate) : null,
       };
       
       const validated = insertTaskSchema.parse(taskData);
@@ -196,6 +197,9 @@ export async function registerRoutes(
       const updateData = {
         ...req.body,
         ...(req.file && { standardImageUrl: `/uploads/${req.file.filename}` }),
+        ...(req.body.dueDate && { dueDate: new Date(req.body.dueDate) }),
+        ...(req.body.categoryId && { categoryId: parseInt(req.body.categoryId) }),
+        ...(req.body.totalStores && { totalStores: parseInt(req.body.totalStores) }),
       };
       const task = await storage.updateTask(id, updateData);
       if (!task) {
