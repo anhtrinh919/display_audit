@@ -18,7 +18,7 @@ export default function CategoriesPage() {
       <div className="p-8 max-w-7xl mx-auto space-y-8">
         <div className="flex justify-between items-end">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">Danh mục Nhiệm vụ</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">Danh mục Hạng mục</h1>
             <p className="text-muted-foreground">Phân loại và quản lý các loại hình kiểm tra trưng bày.</p>
           </div>
           <Button className="gap-2">
@@ -43,7 +43,7 @@ export default function CategoriesPage() {
                 <CardDescription className="line-clamp-2">{cat.desc}</CardDescription>
               </CardHeader>
               <CardFooter className="pt-0 text-sm text-muted-foreground">
-                {cat.count} nhiệm vụ đang hoạt động
+                {cat.count} hạng mục đang hoạt động
               </CardFooter>
             </Card>
           ))}

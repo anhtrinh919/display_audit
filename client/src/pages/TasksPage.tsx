@@ -22,7 +22,7 @@ export default function TasksPage() {
       <div className="p-8 max-w-7xl mx-auto space-y-8">
         <div className="flex justify-between items-end">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">Nhiệm vụ Trưng bày</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">Hạng mục</h1>
             <p className="text-muted-foreground">Quản lý các chiến dịch kiểm tra và tiêu chuẩn trưng bày.</p>
           </div>
           
@@ -56,7 +56,7 @@ export default function TasksPage() {
                   </div>
                   <div className="bg-blue-50 text-blue-800 p-4 rounded-lg text-sm flex gap-3 items-start border border-blue-100">
                     <div className="mt-0.5">ℹ️</div>
-                    <p>AI sẽ phân tích tên file để tự động gán vào đúng Mã Cửa hàng và Nhiệm vụ. Ảnh không xác định sẽ được đưa vào "Hàng chờ Duyệt".</p>
+                    <p>AI sẽ phân tích tên file để tự động gán vào đúng Mã Cửa hàng và Hạng mục. Ảnh không xác định sẽ được đưa vào "Hàng chờ Duyệt".</p>
                   </div>
                 </div>
                 <DialogFooter>
@@ -69,19 +69,19 @@ export default function TasksPage() {
               <DialogTrigger asChild>
                 <Button className="gap-2 shadow-lg hover:shadow-xl transition-all">
                   <Plus className="w-4 h-4" />
-                  Tạo Nhiệm vụ mới
+                  Tạo Hạng mục mới
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
-                  <DialogTitle>Tạo Nhiệm vụ Kiểm tra</DialogTitle>
+                  <DialogTitle>Tạo Hạng mục Kiểm tra</DialogTitle>
                   <DialogDescription>
                     Thiết lập chiến dịch kiểm tra mới. Tải lên hình ảnh chuẩn (Best Practice).
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="title">Tên Nhiệm vụ</Label>
+                    <Label htmlFor="title">Tên Hạng mục</Label>
                     <Input id="title" placeholder="VD: Trưng bày End-Cap Mùa Hè" />
                   </div>
                   <div className="grid gap-2">
@@ -113,7 +113,7 @@ export default function TasksPage() {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="submit">Tạo Nhiệm vụ</Button>
+                  <Button type="submit">Tạo Hạng mục</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -133,19 +133,19 @@ export default function TasksPage() {
                   <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
                 </div>
                 <h3 className="font-semibold text-lg text-muted-foreground group-hover:text-foreground">Chiến dịch Mới</h3>
-                <p className="text-sm text-muted-foreground/60 mt-1 max-w-[200px]">Tạo nhiệm vụ kiểm tra mới và tải lên ảnh tham chiếu</p>
+                <p className="text-sm text-muted-foreground/60 mt-1 max-w-[200px]">Tạo hạng mục kiểm tra mới và tải lên ảnh tham chiếu</p>
               </div>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>Tạo Nhiệm vụ Kiểm tra</DialogTitle>
+                <DialogTitle>Tạo Hạng mục Kiểm tra</DialogTitle>
                 <DialogDescription>
                   Thiết lập chiến dịch kiểm tra mới. Tải lên hình ảnh chuẩn (Best Practice).
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="title-card">Tên Nhiệm vụ</Label>
+                  <Label htmlFor="title-card">Tên Hạng mục</Label>
                   <Input id="title-card" placeholder="VD: Trưng bày End-Cap Mùa Hè" />
                 </div>
                 {/* Simplified form for the card trigger */}
@@ -160,7 +160,7 @@ export default function TasksPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit">Tạo Nhiệm vụ</Button>
+                <Button type="submit">Tạo Hạng mục</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>

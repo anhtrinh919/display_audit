@@ -9,7 +9,7 @@ export function Sidebar() {
 
   const navItems = [
     { icon: LayoutDashboard, label: "Tổng quan", href: "/reports" },
-    { icon: ClipboardList, label: "Nhiệm vụ Trưng bày", href: "/" },
+    { icon: ClipboardList, label: "Hạng mục", href: "/" },
     { icon: Store, label: "Cửa hàng", href: "/stores" },
     { icon: Tags, label: "Danh mục", href: "/categories" },
     { icon: BarChart3, label: "Phân tích", href: "/analytics" },
