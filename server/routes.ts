@@ -357,7 +357,7 @@ Lưu ý:
 - Trả về JSON hợp lệ, không có text thêm`;
 
       const aiResponse = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.5-pro",
         contents: [
           {
             role: "user",
