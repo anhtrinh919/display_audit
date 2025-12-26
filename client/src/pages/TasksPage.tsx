@@ -1,7 +1,7 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { TaskCard } from "@/components/audit/TaskCard";
 import { Button } from "@/components/ui/button";
-import { Plus, Upload, Calendar as CalendarIcon, FileImage, FolderOpen, Loader2 } from "lucide-react";
+import { Plus, Upload, Calendar as CalendarIcon, FileImage, FolderOpen, Loader2, X, CheckCircle2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +25,8 @@ export default function TasksPage() {
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string>("");
+  const [standardImageFile, setStandardImageFile] = useState<File | null>(null);
+  const [standardImagePreview, setStandardImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const standardImageRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -71,19 +73,50 @@ export default function TasksPage() {
     onError: (error: Error) => toast({ title: error.message || "Lỗi khi tải ảnh", variant: "destructive" }),
   });
 
+  const handleStandardImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    console.log("[DEBUG] Standard image selected:", file?.name, file?.size);
+    if (file) {
+      setStandardImageFile(file);
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setStandardImagePreview(ev.target?.result as string);
+        console.log("[DEBUG] Preview loaded for:", file.name);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleCreateSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
-    const file = standardImageRef.current?.files?.[0];
-    if (file) {
-      formData.set("standardImage", file);
+    console.log("[DEBUG] Form submit - standardImageFile:", standardImageFile?.name);
+    if (standardImageFile) {
+      formData.set("standardImage", standardImageFile);
+      console.log("[DEBUG] Added standardImage to formData");
     }
     
     const taskId = `T-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`;
     formData.set("taskId", taskId);
     
+    console.log("[DEBUG] Submitting task with formData entries:");
+    Array.from(formData.entries()).forEach(([key, value]) => {
+      console.log(`  ${key}:`, value instanceof File ? `File(${value.name})` : value);
+    });
+    
     createMutation.mutate(formData);
+  };
+
+  const handleCreateDialogChange = (open: boolean) => {
+    setCreateDialogOpen(open);
+    if (!open) {
+      setStandardImageFile(null);
+      setStandardImagePreview(null);
+      if (standardImageRef.current) {
+        standardImageRef.current.value = "";
+      }
+    }
   };
 
   const handleBatchUpload = () => {
@@ -203,7 +236,7 @@ export default function TasksPage() {
               </DialogContent>
             </Dialog>
 
-            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+            <Dialog open={createDialogOpen} onOpenChange={handleCreateDialogChange}>
               <DialogTrigger asChild>
                 <Button className="gap-2 shadow-lg hover:shadow-xl transition-all" data-testid="button-create-task">
                   <Plus className="w-4 h-4" />
@@ -255,23 +288,66 @@ export default function TasksPage() {
                     </div>
                     <div className="grid gap-2">
                       <Label>Ảnh Tiêu chuẩn</Label>
-                      <div 
-                        className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/50 transition-colors"
-                        onClick={() => standardImageRef.current?.click()}
-                      >
-                        <input
-                          ref={standardImageRef}
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          name="standardImage"
-                        />
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-2">
-                          <Upload className="w-5 h-5 text-primary" />
+                      <input
+                        ref={standardImageRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleStandardImageSelect}
+                        data-testid="input-standard-image"
+                      />
+                      {standardImagePreview ? (
+                        <div className="relative border-2 border-primary rounded-lg overflow-hidden">
+                          <img 
+                            src={standardImagePreview} 
+                            alt="Preview" 
+                            className="w-full h-40 object-cover"
+                          />
+                          <div className="absolute top-2 right-2 flex gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="secondary"
+                              className="h-8 gap-1"
+                              onClick={() => standardImageRef.current?.click()}
+                            >
+                              <Upload className="w-3 h-3" />
+                              Đổi ảnh
+                            </Button>
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="destructive"
+                              className="h-8 w-8"
+                              onClick={() => {
+                                setStandardImageFile(null);
+                                setStandardImagePreview(null);
+                                if (standardImageRef.current) {
+                                  standardImageRef.current.value = "";
+                                }
+                              }}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                            <CheckCircle2 className="w-3 h-3 text-green-400" />
+                            {standardImageFile?.name}
+                          </div>
                         </div>
-                        <p className="text-sm font-medium">Nhấn để tải ảnh lên</p>
-                        <p className="text-xs text-muted-foreground mt-1">JPG, PNG tối đa 10MB</p>
-                      </div>
+                      ) : (
+                        <div 
+                          className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => standardImageRef.current?.click()}
+                          data-testid="button-select-image"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+                            <Upload className="w-5 h-5 text-primary" />
+                          </div>
+                          <p className="text-sm font-medium">Nhấn để tải ảnh lên</p>
+                          <p className="text-xs text-muted-foreground mt-1">JPG, PNG tối đa 10MB</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <DialogFooter>
