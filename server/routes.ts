@@ -278,24 +278,61 @@ export async function registerRoutes(
         standardImageBase64 = standardImageBuffer.toString("base64");
       }
 
-      // AI Analysis using Gemini
-      const prompt = `You are an AI retail display auditor. Compare these two images:
-1. Standard/Best Practice Display (reference)
-2. Actual Store Display (current state)
+      // AI Analysis using Gemini - Improved prompt for Vietnamese retail display auditing
+      const prompt = `Bạn là chuyên gia kiểm tra trưng bày bán lẻ (Trade Marketing Auditor). So sánh 2 ảnh sau:
+- ẢNH 1: Tiêu chuẩn trưng bày (Best Practice/Standard)
+- ẢNH 2: Thực tế tại cửa hàng (Actual Display)
 
-Analyze the actual display against the standard and provide:
-1. Compliance score (0-100): How well does the actual display match the standard?
-2. List of specific issues (max 5 bullet points): What are the key differences or problems?
-3. Overall status: "compliant" (90-100), "needs_review" (70-89), or "non_compliant" (<70)
+## BƯỚC 1: KIỂM TRA THEME/CHIẾN DỊCH
+Trước tiên, xác định theme/chiến dịch của mỗi ảnh (ví dụ: Halloween, Trung Thu, Tết, Khuyến mãi cuối năm...).
+- Nếu theme KHÔNG KHỚP → Điểm số = 0-20, status = "non_compliant"
+- Chỉ khi theme KHỚP mới tiếp tục đánh giá chi tiết
 
-Focus on: product arrangement, shelf organization, signage placement, stock levels, and visual appeal.
+## BƯỚC 2: SO SÁNH CHI TIẾT (nếu theme khớp)
+Phân tích theo các tiêu chí:
+1. **Vị trí sản phẩm**: Sản phẩm chính có đúng vị trí không?
+2. **POSM/Biển hiệu**: Banner, wobbler, price tag có đúng không?
+3. **Số lượng/Đầy kệ**: Hàng có đầy đủ không?
+4. **Sắp xếp**: Theo màu sắc, kích thước, thương hiệu?
+5. **Sạch sẽ**: Kệ hàng và sản phẩm có sạch không?
 
-Respond in JSON format:
+## ĐỊNH DẠNG OUTPUT (JSON - TIẾNG VIỆT):
 {
-  "score": <number>,
-  "status": "<string>",
-  "issues": [<array of strings>]
-}`;
+  "themeMatch": {
+    "standard": "<tên theme ảnh tiêu chuẩn>",
+    "actual": "<tên theme ảnh thực tế>",
+    "match": <true/false>,
+    "comment": "<nhận xét về sự khớp theme>"
+  },
+  "score": <0-100>,
+  "status": "<compliant|needs_review|non_compliant>",
+  "summary": "<tóm tắt 1-2 câu về kết quả kiểm tra>",
+  "issues": [
+    "<vấn đề 1 bằng tiếng Việt, cụ thể và chi tiết>",
+    "<vấn đề 2>",
+    "..."
+  ],
+  "productComparison": [
+    {
+      "zone": "<khu vực: kệ trên, kệ giữa, kệ dưới, header...>",
+      "standard": "<mô tả ngắn sản phẩm/trưng bày trong ảnh tiêu chuẩn>",
+      "actual": "<mô tả ngắn thực tế>",
+      "match": <true/false>,
+      "note": "<ghi chú khác biệt nếu có>"
+    }
+  ],
+  "recommendations": [
+    "<hành động cụ thể cần làm 1>",
+    "<hành động 2>",
+    "..."
+  ]
+}
+
+Lưu ý: 
+- Tất cả nội dung phải bằng TIẾNG VIỆT
+- Nếu theme không khớp, vấn đề đầu tiên trong "issues" PHẢI nêu rõ sự khác biệt theme
+- Mô tả cụ thể sản phẩm/thương hiệu nhìn thấy được trong ảnh
+- Trả về JSON hợp lệ, không có text thêm`;
 
       const aiResponse = await ai.models.generateContent({
         model: "gemini-2.5-flash",
@@ -330,7 +367,31 @@ Respond in JSON format:
         analysis = JSON.parse(jsonStr);
       } catch (parseError) {
         console.error("Failed to parse AI response:", parseError);
-        analysis = { score: 0, status: "pending", issues: ["AI analysis failed"] };
+        analysis = { 
+          score: 0, 
+          status: "pending", 
+          issues: ["Lỗi phân tích AI - không thể đọc kết quả"],
+          summary: "Không thể phân tích hình ảnh. Vui lòng thử lại."
+        };
+      }
+
+      // Validate and normalize AI response
+      const normalizedAnalysis = {
+        themeMatch: analysis.themeMatch || null,
+        score: typeof analysis.score === "number" ? Math.min(100, Math.max(0, analysis.score)) : 0,
+        status: ["compliant", "needs_review", "non_compliant"].includes(analysis.status) 
+          ? analysis.status 
+          : (analysis.score >= 90 ? "compliant" : analysis.score >= 70 ? "needs_review" : "non_compliant"),
+        summary: analysis.summary || null,
+        issues: Array.isArray(analysis.issues) ? analysis.issues : [],
+        productComparison: Array.isArray(analysis.productComparison) ? analysis.productComparison : [],
+        recommendations: Array.isArray(analysis.recommendations) ? analysis.recommendations : [],
+      };
+
+      // Force low score if theme doesn't match
+      if (normalizedAnalysis.themeMatch && normalizedAnalysis.themeMatch.match === false) {
+        normalizedAnalysis.score = Math.min(normalizedAnalysis.score, 20);
+        normalizedAnalysis.status = "non_compliant";
       }
 
       // Create audit result
@@ -338,10 +399,10 @@ Respond in JSON format:
         taskId: parseInt(taskId),
         storeId: parseInt(storeId),
         actualImageUrl,
-        score: analysis.score || 0,
-        status: analysis.status || "pending",
-        aiAnalysis: JSON.stringify(analysis),
-        issues: JSON.stringify(analysis.issues || []),
+        score: normalizedAnalysis.score,
+        status: normalizedAnalysis.status,
+        aiAnalysis: JSON.stringify(normalizedAnalysis),
+        issues: JSON.stringify(normalizedAnalysis.issues),
       };
 
       const result = await storage.createAuditResult(auditData);

@@ -11,10 +11,37 @@ import {
   Download, 
   Share2,
   ScanEye,
-  ImageIcon
+  ImageIcon,
+  Layers,
+  ListChecks
 } from "lucide-react";
 import { motion } from "framer-motion";
 import type { Task, AuditResult, Store } from "@shared/schema";
+
+interface ThemeMatch {
+  standard: string;
+  actual: string;
+  match: boolean;
+  comment: string;
+}
+
+interface ProductComparison {
+  zone: string;
+  standard: string;
+  actual: string;
+  match: boolean;
+  note?: string;
+}
+
+interface AIAnalysis {
+  themeMatch?: ThemeMatch;
+  score: number;
+  status: string;
+  summary?: string;
+  issues: string[];
+  productComparison?: ProductComparison[];
+  recommendations?: string[];
+}
 
 interface AuditComparisonProps {
   task: Task;
@@ -25,19 +52,40 @@ interface AuditComparisonProps {
 export function AuditComparison({ task, result, store }: AuditComparisonProps) {
   const [showGrid, setShowGrid] = useState(true);
   const [activeIssue, setActiveIssue] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<"issues" | "comparison" | "actions">("issues");
 
   const score = result.score || 0;
-  const parseIssues = (issuesData: string | null | undefined): string[] => {
-    if (!issuesData) return [];
-    try {
-      const parsed = JSON.parse(issuesData);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
+  
+  const parseAIAnalysis = (): AIAnalysis => {
+    const defaultAnalysis: AIAnalysis = { score: 0, status: "pending", issues: [] };
+    
+    if (result.aiAnalysis) {
+      try {
+        const parsed = JSON.parse(result.aiAnalysis);
+        return { ...defaultAnalysis, ...parsed };
+      } catch {
+        // Fall back to issues field
+      }
     }
+    
+    if (result.issues) {
+      try {
+        const issues = JSON.parse(result.issues);
+        return { ...defaultAnalysis, issues: Array.isArray(issues) ? issues : [] };
+      } catch {
+        return defaultAnalysis;
+      }
+    }
+    
+    return defaultAnalysis;
   };
-  const issues = parseIssues(result.issues);
+
+  const analysis = parseAIAnalysis();
   const storeName = store?.name || "Không xác định";
+  const themeMatch = analysis.themeMatch;
+  const issues = analysis.issues || [];
+  const productComparison = analysis.productComparison || [];
+  const recommendations = analysis.recommendations || [];
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-140px)]">
@@ -72,6 +120,13 @@ export function AuditComparison({ task, result, store }: AuditComparisonProps) {
                 Tiêu chuẩn (Best Practice)
               </Badge>
             </div>
+            {themeMatch && (
+              <div className="absolute bottom-3 left-3 z-10">
+                <Badge variant="outline" className="bg-white/90 backdrop-blur-sm">
+                  Theme: {themeMatch.standard}
+                </Badge>
+              </div>
+            )}
             {task.standardImageUrl ? (
               <img 
                 src={task.standardImageUrl} 
@@ -93,24 +148,36 @@ export function AuditComparison({ task, result, store }: AuditComparisonProps) {
               </Badge>
             </div>
             
+            {themeMatch && (
+              <div className="absolute bottom-3 left-3 z-10">
+                <Badge 
+                  variant={themeMatch.match ? "outline" : "destructive"}
+                  className={themeMatch.match ? "bg-white/90 backdrop-blur-sm" : ""}
+                >
+                  Theme: {themeMatch.actual}
+                  {!themeMatch.match && " ⚠️"}
+                </Badge>
+              </div>
+            )}
+            
             {showGrid && (
               <div className="absolute inset-0 z-20 pointer-events-none audit-grid opacity-60 mix-blend-overlay" />
             )}
 
-            {issues.map((_, idx) => (
+            {issues.slice(0, 5).map((_, idx) => (
               <motion.div
                 key={idx}
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.5 + (idx * 0.1) }}
-                className={`absolute z-30 w-16 h-16 border-2 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 ${
+                className={`absolute z-30 w-12 h-12 border-2 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 ${
                   activeIssue === idx 
                     ? "border-destructive bg-destructive/20 scale-125 shadow-[0_0_15px_rgba(239,68,68,0.6)]" 
                     : "border-destructive/60 bg-transparent hover:border-destructive hover:bg-destructive/10"
                 }`}
                 style={{
-                  top: `${20 + (idx * 15)}%`,
-                  left: `${30 + (idx * 12)}%`,
+                  top: `${15 + (idx * 12)}%`,
+                  left: `${25 + (idx * 10)}%`,
                 }}
                 onClick={() => setActiveIssue(idx === activeIssue ? null : idx)}
               >
@@ -155,7 +222,7 @@ export function AuditComparison({ task, result, store }: AuditComparisonProps) {
               <div className="flex justify-between items-center mb-4">
                 <span className="text-sm font-medium text-muted-foreground">Điểm Tuân thủ</span>
                 <span className={`text-2xl font-bold ${
-                  score >= 90 ? "text-secondary" : score >= 70 ? "text-accent" : "text-destructive"
+                  score >= 90 ? "text-green-600" : score >= 70 ? "text-yellow-600" : "text-red-600"
                 }`} data-testid="text-score">
                   {score}%
                 </span>
@@ -163,32 +230,85 @@ export function AuditComparison({ task, result, store }: AuditComparisonProps) {
               <div className="w-full bg-muted rounded-full h-3 mb-2 overflow-hidden">
                 <div 
                   className={`h-full rounded-full transition-all duration-1000 ease-out ${
-                    score >= 90 ? "bg-secondary" : score >= 70 ? "bg-accent" : "bg-destructive"
+                    score >= 90 ? "bg-green-500" : score >= 70 ? "bg-yellow-500" : "bg-red-500"
                   }`} 
                   style={{ width: `${score}%` }} 
                 />
               </div>
               <div className="flex items-center gap-2 mt-4 pt-4 border-t">
                 {score >= 90 ? (
-                  <CheckCircle2 className="w-5 h-5 text-secondary" />
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
                 ) : score >= 70 ? (
-                  <AlertTriangle className="w-5 h-5 text-accent" />
+                  <AlertTriangle className="w-5 h-5 text-yellow-600" />
                 ) : (
-                  <XCircle className="w-5 h-5 text-destructive" />
+                  <XCircle className="w-5 h-5 text-red-600" />
                 )}
                 <span className="font-medium" data-testid="text-status">
-                  {score >= 90 ? "Đạt (Tuyệt đối)" : score >= 70 ? "Đạt (Cần cải thiện)" : "Không Đạt"}
+                  {score >= 90 ? "Đạt" : score >= 70 ? "Cần cải thiện" : "Không Đạt"}
                 </span>
               </div>
+              {analysis.summary && (
+                <p className="text-sm text-muted-foreground mt-3 pt-3 border-t">{analysis.summary}</p>
+              )}
             </div>
 
-            {issues.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Lỗi phát hiện bởi AI</h3>
+            {themeMatch && !themeMatch.match && (
+              <div className="bg-red-50 dark:bg-red-950/30 rounded-xl p-4 border border-red-200 dark:border-red-900">
+                <div className="flex items-start gap-3">
+                  <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-red-700 dark:text-red-400 mb-1">Theme không khớp!</h4>
+                    <p className="text-sm text-red-600 dark:text-red-300">
+                      <strong>Tiêu chuẩn:</strong> {themeMatch.standard}<br/>
+                      <strong>Thực tế:</strong> {themeMatch.actual}
+                    </p>
+                    {themeMatch.comment && (
+                      <p className="text-sm text-red-600/80 dark:text-red-300/80 mt-2 italic">
+                        {themeMatch.comment}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-1 p-1 bg-muted rounded-lg">
+              <Button 
+                variant={activeTab === "issues" ? "secondary" : "ghost"} 
+                size="sm" 
+                className="flex-1 text-xs"
+                onClick={() => setActiveTab("issues")}
+              >
+                Vấn đề ({issues.length})
+              </Button>
+              <Button 
+                variant={activeTab === "comparison" ? "secondary" : "ghost"} 
+                size="sm" 
+                className="flex-1 text-xs"
+                onClick={() => setActiveTab("comparison")}
+              >
+                So sánh ({productComparison.length})
+              </Button>
+              <Button 
+                variant={activeTab === "actions" ? "secondary" : "ghost"} 
+                size="sm" 
+                className="flex-1 text-xs"
+                onClick={() => setActiveTab("actions")}
+              >
+                Hành động ({recommendations.length})
+              </Button>
+            </div>
+
+            {activeTab === "issues" && issues.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4" />
+                  Lỗi phát hiện bởi AI
+                </h3>
                 {issues.map((issue, idx) => (
                   <div 
                     key={idx}
-                    className={`p-4 rounded-lg border transition-all duration-200 cursor-pointer ${
+                    className={`p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
                       activeIssue === idx 
                         ? "bg-destructive/5 border-destructive shadow-sm ring-1 ring-destructive/20" 
                         : "bg-card hover:bg-accent/5 hover:border-accent/50"
@@ -198,7 +318,7 @@ export function AuditComparison({ task, result, store }: AuditComparisonProps) {
                     data-testid={`issue-${idx}`}
                   >
                     <div className="flex gap-3">
-                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-destructive/10 text-destructive text-xs font-bold flex items-center justify-center mt-0.5 border border-destructive/20">
+                      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-destructive/10 text-destructive text-xs font-bold flex items-center justify-center border border-destructive/20">
                         {idx + 1}
                       </span>
                       <p className="text-sm leading-relaxed">{issue}</p>
@@ -208,43 +328,72 @@ export function AuditComparison({ task, result, store }: AuditComparisonProps) {
               </div>
             )}
 
-            <div className="bg-primary/5 rounded-xl p-5 border border-primary/10">
-              <h3 className="font-semibold text-primary mb-2 flex items-center gap-2">
-                <ClipboardList className="w-4 h-4" />
-                Hành động Đề xuất
-              </h3>
-              <ul className="text-sm space-y-2 text-foreground/80 list-disc list-inside">
-                {score < 90 && <li>Điều chỉnh trưng bày theo tiêu chuẩn</li>}
-                {score < 70 && <li>Liên hệ quản lý để được hỗ trợ</li>}
-                {score >= 90 && <li>Duy trì chất lượng trưng bày hiện tại</li>}
-              </ul>
-            </div>
+            {activeTab === "comparison" && productComparison.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <Layers className="w-4 h-4" />
+                  So sánh theo Khu vực
+                </h3>
+                {productComparison.map((comp, idx) => (
+                  <div key={idx} className="p-3 rounded-lg border bg-card">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-sm">{comp.zone}</span>
+                      {comp.match ? (
+                        <Badge variant="outline" className="text-green-600 border-green-300 bg-green-50">
+                          <CheckCircle2 className="w-3 h-3 mr-1" /> Khớp
+                        </Badge>
+                      ) : (
+                        <Badge variant="destructive" className="text-xs">
+                          <XCircle className="w-3 h-3 mr-1" /> Khác
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="p-2 bg-primary/5 rounded">
+                        <span className="text-muted-foreground block mb-1">Tiêu chuẩn:</span>
+                        {comp.standard}
+                      </div>
+                      <div className="p-2 bg-muted rounded">
+                        <span className="text-muted-foreground block mb-1">Thực tế:</span>
+                        {comp.actual}
+                      </div>
+                    </div>
+                    {comp.note && (
+                      <p className="text-xs text-muted-foreground mt-2 italic">📝 {comp.note}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeTab === "actions" && recommendations.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <ListChecks className="w-4 h-4" />
+                  Hành động Đề xuất
+                </h3>
+                {recommendations.map((rec, idx) => (
+                  <div key={idx} className="p-3 rounded-lg border bg-primary/5 border-primary/20">
+                    <div className="flex gap-3">
+                      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary text-xs font-bold flex items-center justify-center">
+                        {idx + 1}
+                      </span>
+                      <p className="text-sm leading-relaxed">{rec}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeTab === "issues" && issues.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <CheckCircle2 className="w-12 h-12 mx-auto mb-2 text-green-500" />
+                <p className="text-sm">Không phát hiện vấn đề!</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
     </div>
-  );
-}
-
-function ClipboardList(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
-      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-      <path d="M9 14h6" />
-      <path d="M9 10h6" />
-      <path d="M9 18h6" />
-    </svg>
   );
 }

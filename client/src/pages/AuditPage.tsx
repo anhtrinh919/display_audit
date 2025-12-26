@@ -2,7 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { AuditComparison } from "@/components/audit/AuditComparison";
 import { useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Save, Upload, Loader2, ImageIcon } from "lucide-react";
+import { ChevronLeft, Save, Upload, Loader2, ImageIcon, X, CheckCircle2 } from "lucide-react";
 import { Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { tasksApi, auditResultsApi, storesApi } from "@/lib/api";
@@ -18,6 +18,8 @@ export default function AuditPage() {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [selectedStoreId, setSelectedStoreId] = useState("");
   const [selectedResultIndex, setSelectedResultIndex] = useState(0);
+  const [auditImageFile, setAuditImageFile] = useState<File | null>(null);
+  const [auditImagePreview, setAuditImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -44,16 +46,36 @@ export default function AuditPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["audit-results", taskId] });
       queryClient.invalidateQueries({ queryKey: ["task", taskId] });
-      setUploadDialogOpen(false);
-      setSelectedStoreId("");
+      handleDialogClose();
       toast({ title: "Đã tải ảnh và phân tích AI thành công" });
     },
     onError: (error: Error) => toast({ title: error.message || "Lỗi khi tải ảnh", variant: "destructive" }),
   });
 
+  const handleAuditImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAuditImageFile(file);
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setAuditImagePreview(ev.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDialogClose = () => {
+    setUploadDialogOpen(false);
+    setSelectedStoreId("");
+    setAuditImageFile(null);
+    setAuditImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const handleUpload = () => {
-    const file = fileInputRef.current?.files?.[0];
-    if (!file || !selectedStoreId || !taskId) {
+    if (!auditImageFile || !selectedStoreId || !taskId) {
       toast({ title: "Vui lòng chọn cửa hàng và ảnh", variant: "destructive" });
       return;
     }
@@ -61,7 +83,7 @@ export default function AuditPage() {
     const formData = new FormData();
     formData.append("taskId", String(taskId));
     formData.append("storeId", selectedStoreId);
-    formData.append("actualImage", file);
+    formData.append("actualImage", auditImageFile);
 
     uploadMutation.mutate(formData);
   };
@@ -143,7 +165,7 @@ export default function AuditPage() {
               </>
             )}
             
-            <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+            <Dialog open={uploadDialogOpen} onOpenChange={(open) => !open && handleDialogClose()}>
               <Button className="gap-2" onClick={() => setUploadDialogOpen(true)} data-testid="button-upload-audit">
                 <Upload className="w-4 h-4" />
                 Tải ảnh Kiểm tra
@@ -171,22 +193,66 @@ export default function AuditPage() {
                   </div>
                   <div>
                     <Label>Ảnh Thực tế</Label>
-                    <div 
-                      className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                      />
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-2">
-                        <ImageIcon className="w-5 h-5 text-primary" />
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAuditImageSelect}
+                      data-testid="input-audit-image"
+                    />
+                    {auditImagePreview ? (
+                      <div className="relative border-2 border-primary rounded-lg overflow-hidden">
+                        <img 
+                          src={auditImagePreview} 
+                          alt="Preview" 
+                          className="w-full h-40 object-cover"
+                        />
+                        <div className="absolute top-2 right-2 flex gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            className="h-8 gap-1"
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            <Upload className="w-3 h-3" />
+                            Đổi ảnh
+                          </Button>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="destructive"
+                            className="h-8 w-8"
+                            onClick={() => {
+                              setAuditImageFile(null);
+                              setAuditImagePreview(null);
+                              if (fileInputRef.current) {
+                                fileInputRef.current.value = "";
+                              }
+                            }}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                          <CheckCircle2 className="w-3 h-3 text-green-400" />
+                          {auditImageFile?.name}
+                        </div>
                       </div>
-                      <p className="text-sm font-medium">Nhấn để chọn ảnh</p>
-                      <p className="text-xs text-muted-foreground mt-1">JPG, PNG tối đa 10MB</p>
-                    </div>
+                    ) : (
+                      <div 
+                        className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => fileInputRef.current?.click()}
+                        data-testid="button-select-audit-image"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+                          <ImageIcon className="w-5 h-5 text-primary" />
+                        </div>
+                        <p className="text-sm font-medium">Nhấn để chọn ảnh</p>
+                        <p className="text-xs text-muted-foreground mt-1">JPG, PNG tối đa 10MB</p>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <DialogFooter>
