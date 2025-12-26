@@ -6,8 +6,6 @@ import {
   CheckCircle2, 
   XCircle, 
   AlertTriangle, 
-  Maximize2, 
-  Grid3X3, 
   Download, 
   Share2,
   ScanEye,
@@ -75,7 +73,6 @@ interface AuditComparisonProps {
 }
 
 export function AuditComparison({ task, result, store }: AuditComparisonProps) {
-  const [showGrid, setShowGrid] = useState(true);
   const [activeTab, setActiveTab] = useState<"issues" | "comparison">("comparison");
   const [expandedShelves, setExpandedShelves] = useState<Set<string>>(new Set());
 
@@ -162,22 +159,6 @@ export function AuditComparison({ task, result, store }: AuditComparisonProps) {
             <ScanEye className="w-5 h-5 text-primary" />
             Phân tích Hình ảnh
           </h2>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant={showGrid ? "secondary" : "outline"} 
-              size="sm" 
-              onClick={() => setShowGrid(!showGrid)}
-              className="gap-2"
-              data-testid="button-toggle-grid"
-            >
-              <Grid3X3 className="w-4 h-4" />
-              {showGrid ? "Ẩn Lưới" : "Hiện Lưới"}
-            </Button>
-            <Button variant="outline" size="sm" className="gap-2">
-              <Maximize2 className="w-4 h-4" />
-              Mở rộng
-            </Button>
-          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
@@ -227,10 +208,6 @@ export function AuditComparison({ task, result, store }: AuditComparisonProps) {
               </div>
             )}
             
-            {showGrid && (
-              <div className="absolute inset-0 z-20 pointer-events-none audit-grid opacity-60 mix-blend-overlay" />
-            )}
-
             {result.actualImageUrl ? (
               <img 
                 src={result.actualImageUrl} 

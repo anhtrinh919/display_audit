@@ -75,9 +75,9 @@ export function TaskCard({ task }: TaskCardProps) {
           <Calendar className="w-3.5 h-3.5" />
           <span>Hạn: {dueDate}</span>
         </div>
-        <Link href={`/audit/${task.id}`}>
+        <Link href={`/dashboard/${task.id}`}>
           <div className="flex items-center gap-1 font-medium text-primary hover:underline cursor-pointer" data-testid={`link-task-details-${task.id}`}>
-            Xem Chi tiết <ChevronRight className="w-3 h-3" />
+            Xem Dashboard <ChevronRight className="w-3 h-3" />
           </div>
         </Link>
       </CardFooter>
