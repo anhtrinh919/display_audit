@@ -13,9 +13,9 @@ import {
   ScanEye,
   ImageIcon,
   Layers,
-  ListChecks
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
-import { motion } from "framer-motion";
 import type { Task, AuditResult, Store } from "@shared/schema";
 
 interface ThemeMatch {
@@ -25,7 +25,32 @@ interface ThemeMatch {
   comment: string;
 }
 
-interface ProductComparison {
+interface ShelfTray {
+  trayNumber: number;
+  standardCategory: string;
+  actualCategory: string;
+  match: boolean;
+  note?: string;
+}
+
+interface ShelfUnit {
+  shelfId: string;
+  shelfName: string;
+  standardTrayCount: number;
+  actualTrayCount: number;
+  trayCountMatch: boolean;
+  trays: ShelfTray[];
+  overallMatch: boolean;
+}
+
+interface ShelfComparison {
+  standardShelfCount: number;
+  actualShelfCount: number;
+  shelfCountMatch: boolean;
+  shelves: ShelfUnit[];
+}
+
+interface OldProductComparison {
   zone: string;
   standard: string;
   actual: string;
@@ -39,8 +64,8 @@ interface AIAnalysis {
   status: string;
   summary?: string;
   issues: string[];
-  productComparison?: ProductComparison[];
-  recommendations?: string[];
+  shelfComparison?: ShelfComparison;
+  productComparison?: OldProductComparison[];
 }
 
 interface AuditComparisonProps {
@@ -51,8 +76,8 @@ interface AuditComparisonProps {
 
 export function AuditComparison({ task, result, store }: AuditComparisonProps) {
   const [showGrid, setShowGrid] = useState(true);
-  const [activeIssue, setActiveIssue] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<"issues" | "comparison" | "actions">("issues");
+  const [activeTab, setActiveTab] = useState<"issues" | "comparison">("comparison");
+  const [expandedShelves, setExpandedShelves] = useState<Set<string>>(new Set());
 
   const score = result.score || 0;
   
@@ -84,8 +109,50 @@ export function AuditComparison({ task, result, store }: AuditComparisonProps) {
   const storeName = store?.name || "Không xác định";
   const themeMatch = analysis.themeMatch;
   const issues = analysis.issues || [];
-  const productComparison = analysis.productComparison || [];
-  const recommendations = analysis.recommendations || [];
+  
+  // Convert old productComparison format to new shelfComparison for backward compatibility
+  const getShelfComparison = (): ShelfComparison | null => {
+    if (analysis.shelfComparison) {
+      return analysis.shelfComparison;
+    }
+    // Convert old format if present
+    if (analysis.productComparison && analysis.productComparison.length > 0) {
+      const trays: ShelfTray[] = analysis.productComparison.map((pc, idx) => ({
+        trayNumber: idx + 1,
+        standardCategory: pc.standard,
+        actualCategory: pc.actual,
+        match: pc.match,
+        note: pc.note
+      }));
+      return {
+        standardShelfCount: 1,
+        actualShelfCount: 1,
+        shelfCountMatch: true,
+        shelves: [{
+          shelfId: "shelf_legacy",
+          shelfName: "Kệ chính (dữ liệu cũ)",
+          standardTrayCount: trays.length,
+          actualTrayCount: trays.length,
+          trayCountMatch: true,
+          trays,
+          overallMatch: trays.every(t => t.match)
+        }]
+      };
+    }
+    return null;
+  };
+  
+  const shelfComparison = getShelfComparison();
+
+  const toggleShelf = (shelfId: string) => {
+    const newExpanded = new Set(expandedShelves);
+    if (newExpanded.has(shelfId)) {
+      newExpanded.delete(shelfId);
+    } else {
+      newExpanded.add(shelfId);
+    }
+    setExpandedShelves(newExpanded);
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-140px)]">
@@ -163,29 +230,6 @@ export function AuditComparison({ task, result, store }: AuditComparisonProps) {
             {showGrid && (
               <div className="absolute inset-0 z-20 pointer-events-none audit-grid opacity-60 mix-blend-overlay" />
             )}
-
-            {issues.slice(0, 5).map((_, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.5 + (idx * 0.1) }}
-                className={`absolute z-30 w-12 h-12 border-2 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 ${
-                  activeIssue === idx 
-                    ? "border-destructive bg-destructive/20 scale-125 shadow-[0_0_15px_rgba(239,68,68,0.6)]" 
-                    : "border-destructive/60 bg-transparent hover:border-destructive hover:bg-destructive/10"
-                }`}
-                style={{
-                  top: `${15 + (idx * 12)}%`,
-                  left: `${25 + (idx * 10)}%`,
-                }}
-                onClick={() => setActiveIssue(idx === activeIssue ? null : idx)}
-              >
-                <span className="bg-destructive text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-sm">
-                  {idx + 1}
-                </span>
-              </motion.div>
-            ))}
 
             {result.actualImageUrl ? (
               <img 
@@ -274,6 +318,14 @@ export function AuditComparison({ task, result, store }: AuditComparisonProps) {
 
             <div className="flex gap-1 p-1 bg-muted rounded-lg">
               <Button 
+                variant={activeTab === "comparison" ? "secondary" : "ghost"} 
+                size="sm" 
+                className="flex-1 text-xs"
+                onClick={() => setActiveTab("comparison")}
+              >
+                So sánh Mặt kệ
+              </Button>
+              <Button 
                 variant={activeTab === "issues" ? "secondary" : "ghost"} 
                 size="sm" 
                 className="flex-1 text-xs"
@@ -281,23 +333,111 @@ export function AuditComparison({ task, result, store }: AuditComparisonProps) {
               >
                 Vấn đề ({issues.length})
               </Button>
-              <Button 
-                variant={activeTab === "comparison" ? "secondary" : "ghost"} 
-                size="sm" 
-                className="flex-1 text-xs"
-                onClick={() => setActiveTab("comparison")}
-              >
-                So sánh ({productComparison.length})
-              </Button>
-              <Button 
-                variant={activeTab === "actions" ? "secondary" : "ghost"} 
-                size="sm" 
-                className="flex-1 text-xs"
-                onClick={() => setActiveTab("actions")}
-              >
-                Hành động ({recommendations.length})
-              </Button>
             </div>
+
+            {activeTab === "comparison" && shelfComparison && (
+              <div className="space-y-3">
+                <div className="p-3 rounded-lg border bg-card">
+                  <h3 className="text-sm font-semibold flex items-center gap-2 mb-2">
+                    <Layers className="w-4 h-4" />
+                    Tổng quan Mặt kệ
+                  </h3>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="p-2 bg-primary/5 rounded">
+                      <span className="text-muted-foreground text-xs block">Tiêu chuẩn:</span>
+                      <span className="font-medium">{shelfComparison.standardShelfCount} mặt kệ</span>
+                    </div>
+                    <div className="p-2 bg-muted rounded">
+                      <span className="text-muted-foreground text-xs block">Thực tế:</span>
+                      <span className="font-medium">{shelfComparison.actualShelfCount} mặt kệ</span>
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    {shelfComparison.shelfCountMatch ? (
+                      <Badge variant="outline" className="text-green-600 border-green-300 bg-green-50 text-xs">
+                        <CheckCircle2 className="w-3 h-3 mr-1" /> Số mặt kệ khớp
+                      </Badge>
+                    ) : (
+                      <Badge variant="destructive" className="text-xs">
+                        <XCircle className="w-3 h-3 mr-1" /> Số mặt kệ không khớp
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                {(shelfComparison.shelves || []).map((shelf) => (
+                  <div key={shelf.shelfId || Math.random()} className="rounded-lg border bg-card overflow-hidden">
+                    <button
+                      className="w-full p-3 flex items-center justify-between hover:bg-muted/50 transition-colors"
+                      onClick={() => toggleShelf(shelf.shelfId || 'unknown')}
+                    >
+                      <div className="flex items-center gap-2">
+                        {expandedShelves.has(shelf.shelfId || 'unknown') ? (
+                          <ChevronDown className="w-4 h-4" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4" />
+                        )}
+                        <span className="font-medium text-sm">{shelf.shelfName || 'Mặt kệ'}</span>
+                        <span className="text-xs text-muted-foreground">
+                          ({shelf.standardTrayCount || 0} → {shelf.actualTrayCount || 0} khay)
+                        </span>
+                      </div>
+                      {shelf.overallMatch ? (
+                        <Badge variant="outline" className="text-green-600 border-green-300 bg-green-50 text-xs">
+                          Khớp
+                        </Badge>
+                      ) : (
+                        <Badge variant="destructive" className="text-xs">
+                          Khác
+                        </Badge>
+                      )}
+                    </button>
+                    
+                    {expandedShelves.has(shelf.shelfId || 'unknown') && (
+                      <div className="px-3 pb-3 space-y-2 border-t">
+                        {!shelf.trayCountMatch && (
+                          <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-950/30 rounded text-xs text-yellow-700 dark:text-yellow-300">
+                            ⚠️ Số khay kệ không khớp: Tiêu chuẩn {shelf.standardTrayCount || 0} khay, Thực tế {shelf.actualTrayCount || 0} khay
+                          </div>
+                        )}
+                        {(shelf.trays || []).map((tray, tIdx) => (
+                          <div key={tray.trayNumber || tIdx} className="mt-2 p-2 bg-muted/50 rounded">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-medium">Khay {tray.trayNumber || tIdx + 1}</span>
+                              {tray.match ? (
+                                <CheckCircle2 className="w-3 h-3 text-green-600" />
+                              ) : (
+                                <XCircle className="w-3 h-3 text-red-600" />
+                              )}
+                            </div>
+                            <div className="grid grid-cols-2 gap-1 text-xs">
+                              <div className="truncate">
+                                <span className="text-muted-foreground">TC: </span>
+                                {tray.standardCategory || 'N/A'}
+                              </div>
+                              <div className="truncate">
+                                <span className="text-muted-foreground">TT: </span>
+                                {tray.actualCategory || 'N/A'}
+                              </div>
+                            </div>
+                            {tray.note && (
+                              <p className="text-xs text-muted-foreground mt-1 italic">{tray.note}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeTab === "comparison" && !shelfComparison && (
+              <div className="text-center py-8 text-muted-foreground">
+                <Layers className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Chưa có dữ liệu so sánh mặt kệ</p>
+              </div>
+            )}
 
             {activeTab === "issues" && issues.length > 0 && (
               <div className="space-y-2">
@@ -308,13 +448,7 @@ export function AuditComparison({ task, result, store }: AuditComparisonProps) {
                 {issues.map((issue, idx) => (
                   <div 
                     key={idx}
-                    className={`p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
-                      activeIssue === idx 
-                        ? "bg-destructive/5 border-destructive shadow-sm ring-1 ring-destructive/20" 
-                        : "bg-card hover:bg-accent/5 hover:border-accent/50"
-                    }`}
-                    onMouseEnter={() => setActiveIssue(idx)}
-                    onMouseLeave={() => setActiveIssue(null)}
+                    className="p-3 rounded-lg border bg-card hover:bg-accent/5 hover:border-accent/50 transition-all duration-200"
                     data-testid={`issue-${idx}`}
                   >
                     <div className="flex gap-3">
@@ -322,63 +456,6 @@ export function AuditComparison({ task, result, store }: AuditComparisonProps) {
                         {idx + 1}
                       </span>
                       <p className="text-sm leading-relaxed">{issue}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {activeTab === "comparison" && productComparison.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                  <Layers className="w-4 h-4" />
-                  So sánh theo Khu vực
-                </h3>
-                {productComparison.map((comp, idx) => (
-                  <div key={idx} className="p-3 rounded-lg border bg-card">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-sm">{comp.zone}</span>
-                      {comp.match ? (
-                        <Badge variant="outline" className="text-green-600 border-green-300 bg-green-50">
-                          <CheckCircle2 className="w-3 h-3 mr-1" /> Khớp
-                        </Badge>
-                      ) : (
-                        <Badge variant="destructive" className="text-xs">
-                          <XCircle className="w-3 h-3 mr-1" /> Khác
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="p-2 bg-primary/5 rounded">
-                        <span className="text-muted-foreground block mb-1">Tiêu chuẩn:</span>
-                        {comp.standard}
-                      </div>
-                      <div className="p-2 bg-muted rounded">
-                        <span className="text-muted-foreground block mb-1">Thực tế:</span>
-                        {comp.actual}
-                      </div>
-                    </div>
-                    {comp.note && (
-                      <p className="text-xs text-muted-foreground mt-2 italic">📝 {comp.note}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {activeTab === "actions" && recommendations.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                  <ListChecks className="w-4 h-4" />
-                  Hành động Đề xuất
-                </h3>
-                {recommendations.map((rec, idx) => (
-                  <div key={idx} className="p-3 rounded-lg border bg-primary/5 border-primary/20">
-                    <div className="flex gap-3">
-                      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary text-xs font-bold flex items-center justify-center">
-                        {idx + 1}
-                      </span>
-                      <p className="text-sm leading-relaxed">{rec}</p>
                     </div>
                   </div>
                 ))}

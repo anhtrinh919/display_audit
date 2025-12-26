@@ -278,60 +278,82 @@ export async function registerRoutes(
         standardImageBase64 = standardImageBuffer.toString("base64");
       }
 
-      // AI Analysis using Gemini - Improved prompt for Vietnamese retail display auditing
+      // AI Analysis using Gemini - Structured 4-step shelf comparison
       const prompt = `Bạn là chuyên gia kiểm tra trưng bày bán lẻ (Trade Marketing Auditor). So sánh 2 ảnh sau:
 - ẢNH 1: Tiêu chuẩn trưng bày (Best Practice/Standard)
 - ẢNH 2: Thực tế tại cửa hàng (Actual Display)
 
-## BƯỚC 1: KIỂM TRA THEME/CHIẾN DỊCH
-Trước tiên, xác định theme/chiến dịch của mỗi ảnh (ví dụ: Halloween, Trung Thu, Tết, Khuyến mãi cuối năm...).
-- Nếu theme KHÔNG KHỚP → Điểm số = 0-20, status = "non_compliant"
-- Chỉ khi theme KHỚP mới tiếp tục đánh giá chi tiết
+## ĐỊNH NGHĨA QUAN TRỌNG:
+- **Mặt kệ (Shelf Unit)**: Một đơn vị kệ hoàn chỉnh, có thể có nhiều tầng
+- **Khay kệ (Shelf Tray)**: Mỗi tầng ngang trên một mặt kệ
 
-## BƯỚC 2: SO SÁNH CHI TIẾT (nếu theme khớp)
-Phân tích theo các tiêu chí:
-1. **Vị trí sản phẩm**: Sản phẩm chính có đúng vị trí không?
-2. **POSM/Biển hiệu**: Banner, wobbler, price tag có đúng không?
-3. **Số lượng/Đầy kệ**: Hàng có đầy đủ không?
-4. **Sắp xếp**: Theo màu sắc, kích thước, thương hiệu?
-5. **Sạch sẽ**: Kệ hàng và sản phẩm có sạch không?
+## QUY TRÌNH SO SÁNH 4 BƯỚC:
+
+### BƯỚC 1: ĐẾM SỐ MẶT KỆ
+- Đếm số mặt kệ (shelf units) trong ảnh tiêu chuẩn
+- Đếm số mặt kệ trong ảnh thực tế
+- So sánh: Có bằng nhau không?
+
+### BƯỚC 2: ĐẾM SỐ KHAY KỆ TRÊN MỖI MẶT KỆ
+- Với mỗi mặt kệ, đếm số khay kệ (tầng ngang)
+- So sánh số khay giữa tiêu chuẩn và thực tế
+
+### BƯỚC 3: SO SÁNH NGÀNH HÀNG TRÊN TỪNG KHAY
+- KHÔNG cần nhận diện chính xác sản phẩm
+- Chỉ cần xác định NGÀNH HÀNG/NHÓM SP chung:
+  - Ví dụ: "Đồ chơi", "Bánh kẹo", "Snack", "Nước ngọt", "Hóa mỹ phẩm", "Bia", v.v.
+- So sánh ngành hàng trên từng khay tương ứng
+
+### BƯỚC 4: TÓM TẮT THEO TỪNG MẶT KỆ
+- Tổng hợp kết quả so sánh cho mỗi mặt kệ
+- Đánh giá mức độ tuân thủ tổng thể
+
+## KIỂM TRA THEME (nếu có)
+Nếu ảnh có theme rõ ràng (Halloween, Tết, Trung Thu...):
+- Theme không khớp → Điểm = 0-20, status = "non_compliant"
 
 ## ĐỊNH DẠNG OUTPUT (JSON - TIẾNG VIỆT):
 {
   "themeMatch": {
-    "standard": "<tên theme ảnh tiêu chuẩn>",
-    "actual": "<tên theme ảnh thực tế>",
+    "standard": "<tên theme nếu có, hoặc 'Không có theme cụ thể'>",
+    "actual": "<tên theme thực tế>",
     "match": <true/false>,
-    "comment": "<nhận xét về sự khớp theme>"
+    "comment": "<nhận xét>"
   },
   "score": <0-100>,
   "status": "<compliant|needs_review|non_compliant>",
-  "summary": "<tóm tắt 1-2 câu về kết quả kiểm tra>",
-  "issues": [
-    "<vấn đề 1 bằng tiếng Việt, cụ thể và chi tiết>",
-    "<vấn đề 2>",
-    "..."
-  ],
-  "productComparison": [
-    {
-      "zone": "<khu vực: kệ trên, kệ giữa, kệ dưới, header...>",
-      "standard": "<mô tả ngắn sản phẩm/trưng bày trong ảnh tiêu chuẩn>",
-      "actual": "<mô tả ngắn thực tế>",
-      "match": <true/false>,
-      "note": "<ghi chú khác biệt nếu có>"
-    }
-  ],
-  "recommendations": [
-    "<hành động cụ thể cần làm 1>",
-    "<hành động 2>",
-    "..."
-  ]
+  "summary": "<tóm tắt 1-2 câu về kết quả>",
+  "issues": ["<vấn đề 1>", "<vấn đề 2>"],
+  "shelfComparison": {
+    "standardShelfCount": <số mặt kệ ảnh tiêu chuẩn>,
+    "actualShelfCount": <số mặt kệ ảnh thực tế>,
+    "shelfCountMatch": <true/false>,
+    "shelves": [
+      {
+        "shelfId": "shelf_1",
+        "shelfName": "<tên mặt kệ, vd: Kệ chính, Kệ mini bên cạnh>",
+        "standardTrayCount": <số khay tiêu chuẩn>,
+        "actualTrayCount": <số khay thực tế>,
+        "trayCountMatch": <true/false>,
+        "trays": [
+          {
+            "trayNumber": 1,
+            "standardCategory": "<ngành hàng tiêu chuẩn, vd: Bánh kẹo>",
+            "actualCategory": "<ngành hàng thực tế, vd: Đồ chơi>",
+            "match": <true/false>,
+            "note": "<ghi chú nếu cần>"
+          }
+        ],
+        "overallMatch": <true nếu tất cả khay đều khớp>
+      }
+    ]
+  }
 }
 
-Lưu ý: 
-- Tất cả nội dung phải bằng TIẾNG VIỆT
-- Nếu theme không khớp, vấn đề đầu tiên trong "issues" PHẢI nêu rõ sự khác biệt theme
-- Mô tả cụ thể sản phẩm/thương hiệu nhìn thấy được trong ảnh
+Lưu ý:
+- Tất cả nội dung bằng TIẾNG VIỆT
+- Đánh số khay từ TRÊN xuống DƯỚI (khay 1 = tầng trên cùng)
+- Nếu mặt kệ nhỏ (mini), vẫn liệt kê riêng
 - Trả về JSON hợp lệ, không có text thêm`;
 
       const aiResponse = await ai.models.generateContent({
@@ -376,7 +398,7 @@ Lưu ý:
       }
 
       // Validate and normalize AI response
-      const normalizedAnalysis = {
+      const normalizedAnalysis: any = {
         themeMatch: analysis.themeMatch || null,
         score: typeof analysis.score === "number" ? Math.min(100, Math.max(0, analysis.score)) : 0,
         status: ["compliant", "needs_review", "non_compliant"].includes(analysis.status) 
@@ -384,9 +406,34 @@ Lưu ý:
           : (analysis.score >= 90 ? "compliant" : analysis.score >= 70 ? "needs_review" : "non_compliant"),
         summary: analysis.summary || null,
         issues: Array.isArray(analysis.issues) ? analysis.issues : [],
-        productComparison: Array.isArray(analysis.productComparison) ? analysis.productComparison : [],
-        recommendations: Array.isArray(analysis.recommendations) ? analysis.recommendations : [],
+        shelfComparison: analysis.shelfComparison || null,
       };
+
+      // Validate and sanitize shelfComparison structure if present
+      if (normalizedAnalysis.shelfComparison) {
+        const sc = normalizedAnalysis.shelfComparison;
+        sc.standardShelfCount = typeof sc.standardShelfCount === "number" ? sc.standardShelfCount : 0;
+        sc.actualShelfCount = typeof sc.actualShelfCount === "number" ? sc.actualShelfCount : 0;
+        sc.shelfCountMatch = sc.standardShelfCount === sc.actualShelfCount;
+        sc.shelves = Array.isArray(sc.shelves) ? sc.shelves : [];
+        
+        // Sanitize each shelf and its trays
+        sc.shelves = sc.shelves.map((shelf: any, idx: number) => ({
+          shelfId: shelf.shelfId || `shelf_${idx + 1}`,
+          shelfName: shelf.shelfName || `Mặt kệ ${idx + 1}`,
+          standardTrayCount: typeof shelf.standardTrayCount === "number" ? shelf.standardTrayCount : 0,
+          actualTrayCount: typeof shelf.actualTrayCount === "number" ? shelf.actualTrayCount : 0,
+          trayCountMatch: shelf.standardTrayCount === shelf.actualTrayCount,
+          trays: Array.isArray(shelf.trays) ? shelf.trays.map((tray: any, tIdx: number) => ({
+            trayNumber: typeof tray.trayNumber === "number" ? tray.trayNumber : tIdx + 1,
+            standardCategory: tray.standardCategory || "Không xác định",
+            actualCategory: tray.actualCategory || "Không xác định",
+            match: Boolean(tray.match),
+            note: tray.note || null
+          })) : [],
+          overallMatch: Boolean(shelf.overallMatch)
+        }));
+      }
 
       // Force low score if theme doesn't match
       if (normalizedAnalysis.themeMatch && normalizedAnalysis.themeMatch.match === false) {
